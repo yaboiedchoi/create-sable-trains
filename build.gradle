@@ -170,6 +170,14 @@ dependencies {
     compileOnly("dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}")
     runtimeOnly("dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}")
     implementation("com.tterrag.registrate:Registrate:${registrate_version}")
+
+    // local dependencies
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    // sable
+    // modImplementation files('libs/sable-neoforge-1.21.1-1.2.2.jar')
+    // aeronautics
+    // modImplementation files('libs/create-aeronautics-bundled-1.21.1-1.2.1.jar')
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
