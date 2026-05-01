@@ -53,6 +53,10 @@ This mod adds Sable support to Create mod trains.
 #[[mixins]]
 #config="${mod_id}.mixins.json"
 
+# mixins
+[[mixins]]
+config = "createsabletrains.mixins.json"
+
 # The [[accessTransformers]] block allows you to declare where your AT file is.
 # If this block is omitted, a fallback attempt will be made to load an AT from META-INF/accesstransformer.cfg
 #[[accessTransformers]]
@@ -92,7 +96,7 @@ This mod adds Sable support to Create mod trains.
 [[dependencies.${mod_id}]]
     modId="create"
     type="required"
-    versionRange="[6.0.10]"
+    versionRange="[6.0.10,)"
     ordering="NONE"
     side="BOTH"
 
@@ -100,7 +104,7 @@ This mod adds Sable support to Create mod trains.
 [[dependencies.${mod_id}]]
     modId="sable"
     type="optional"
-    versionRange="[1.2.2]"
+    versionRange="[1.2.2,)"
     ordering="NONE"
     side="BOTH"
 

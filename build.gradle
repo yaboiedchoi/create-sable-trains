@@ -58,6 +58,9 @@ neoForge {
     // Specify the version of NeoForge to use.
     version = project.neo_version
 
+    // mixin configs
+    // mixinConfigs = ["createsabletrains.mixins.json"]
+
     parchment {
         mappingsVersion = project.parchment_mappings_version
         minecraftVersion = project.parchment_minecraft_version
@@ -173,6 +176,9 @@ dependencies {
 
     // local dependencies
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    // sable (non companion local)
+    compileOnly files("libs/sable-neoforge-1.21.1-1.2.2.jar")
 
     // sable
     // modImplementation files('libs/sable-neoforge-1.21.1-1.2.2.jar')
