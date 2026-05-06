@@ -32,6 +32,11 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 // on server stop
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+// add entity leave
+import com.simibubi.create.content.trains.entity.CarriageContraptionEntity;
+import com.yaboiedchoi.createsabletrains.manager.SableTrainManager;
+import net.minecraft.server.level.ServerLevel;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(CreateSableTrains.MODID)
@@ -91,6 +96,9 @@ public class CreateSableTrains {
 
         // on server stopped
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
+
+        // on entity leave
+        NeoForge.EVENT_BUS.addListener(this::onEntityLeaveLevel);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
@@ -123,5 +131,13 @@ public class CreateSableTrains {
     // on server stopped
     private void onServerStopped(ServerStoppedEvent event) {
         SableTrainManager.INSTANCE.onServerStopped();
+    }
+
+    // on entity leave
+    private void onEntityLeaveLevel(EntityLeaveLevelEvent event) {
+        if (event.getEntity() instanceof CarriageContraptionEntity cce
+                && event.getLevel() instanceof ServerLevel serverLevel) {
+            SableTrainManager.INSTANCE.onCarriageRemoved(cce, serverLevel);
+        }
     }
 }

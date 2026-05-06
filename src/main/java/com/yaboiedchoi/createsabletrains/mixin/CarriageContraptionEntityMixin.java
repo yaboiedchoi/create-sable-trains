@@ -61,24 +61,4 @@ public class CarriageContraptionEntityMixin {
 
         SableTrainManager.INSTANCE.onCarriageTick(self, serverLevel);
     }
-
-    /**
-     * INJECTION POINT 3 — Removal
-     *
-     * remove() is called on an entity whenever it leaves the world —
-     * whether from disassembly, chunk unloading, or the train being deleted.
-     * We inject at HEAD so we can still access the entity's data before
-     * Minecraft clears it during the removal process.
-     *
-     * The manager will clean up the sub-level and remove it from both maps.
-     */
-    @Inject(method = "remove", at = @At("HEAD"))
-    private void onRemove(Entity.RemovalReason reason, CallbackInfo ci) {
-        CarriageContraptionEntity self = (CarriageContraptionEntity)(Object)this;
-
-        if (!(self.level() instanceof ServerLevel serverLevel))
-            return;
-
-        SableTrainManager.INSTANCE.onCarriageRemoved(self, serverLevel);
-    }
 }
