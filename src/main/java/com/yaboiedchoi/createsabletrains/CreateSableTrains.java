@@ -1,5 +1,6 @@
 package com.yaboiedchoi.createsabletrains;
 
+import com.yaboiedchoi.createsabletrains.manager.SableTrainManager;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -29,6 +30,8 @@ import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
+// on server stop
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(CreateSableTrains.MODID)
@@ -85,6 +88,9 @@ public class CreateSableTrains {
 
         // Register our mod's ModConfigSpec so that FML can create and load the config file for us
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+
+        // on server stopped
+        NeoForge.EVENT_BUS.addListener(this::onServerStopped);
     }
 
     private void commonSetup(FMLCommonSetupEvent event) {
@@ -112,5 +118,10 @@ public class CreateSableTrains {
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
         LOGGER.info("HELLO from server starting");
+    }
+
+    // on server stopped
+    private void onServerStopped(ServerStoppedEvent event) {
+        SableTrainManager.INSTANCE.onServerStopped();
     }
 }
