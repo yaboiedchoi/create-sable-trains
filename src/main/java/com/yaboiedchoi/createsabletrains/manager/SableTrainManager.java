@@ -7,12 +7,30 @@ import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.Pose3d;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import com.yaboiedchoi.createsabletrains.CreateSableTrains;
+import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Quaterniond;
+
+// block population
+import dev.ryanhcode.sable.sublevel.plot.ServerLevelPlot;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
+import dev.ryanhcode.sable.sublevel.plot.ServerLevelPlot;
+import dev.ryanhcode.sable.util.LevelAccelerator;
+import com.simibubi.create.content.trains.entity.CarriageContraption;
+import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.StructureBlockInfo;
+import net.minecraft.world.level.ChunkPos;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -100,9 +118,14 @@ public class SableTrainManager {
             return;
         }
 
+        if (entity.getContraption() instanceof CarriageContraption cc) {
+            populatePlotFromContraption(subLevel, cc, level);
+        }
+
         // Find the carriage's index within its train.
         // Index 0 is the leading carriage.
         int carriageIndex = carriage.train.carriages.indexOf(carriage);
+
 
         // Create our wrapper object for this carriage.
         SableCarriage sableCarriage = new SableCarriage(
@@ -111,6 +134,8 @@ public class SableTrainManager {
                 carriage,
                 carriageIndex
         );
+
+        sableCarriage.blocksPopulated = true;
 
         // Register it by entity UUID for fast tick lookups.
         carriagesByEntityId.put(entity.getUUID(), sableCarriage);
@@ -278,7 +303,7 @@ public class SableTrainManager {
         // In Minecraft, yaw rotates around the Y axis (left/right).
         // Pitch rotates around the X axis (up/down on slopes).
         // We negate yaw because Minecraft and JOML use opposite conventions.
-        double yawRad   = Math.toRadians(-entity.yaw);
+        double yawRad   = Math.toRadians(-entity.yaw + 180);
         double pitchRad = Math.toRadians(entity.pitch);
 
         pose.orientation()
@@ -305,5 +330,77 @@ public class SableTrainManager {
      */
     public SableTrain getTrain(UUID trainId) {
         return trainsByTrainId.get(trainId);
+    }
+
+
+    private void populatePlotFromContraption(ServerSubLevel subLevel,
+                                             CarriageContraption contraption,
+                                             ServerLevel level) {
+        ServerLevelPlot plot = subLevel.getPlot();
+        BlockPos plotAnchor = plot.getCenterBlock();
+
+        Set<ChunkPos> neededChunks = new java.util.HashSet<>();
+        for (BlockPos localPos : contraption.getBlocks().keySet()) {
+            BlockPos plotPos = plotAnchor.offset(localPos);
+            neededChunks.add(new ChunkPos(plotPos));
+        }
+
+        plot.newEmptyChunk(plot.getCenterChunk());
+        for (ChunkPos cp : neededChunks) {
+            ChunkPos local = plot.toLocal(cp);
+            if (plot.getChunk(local) == null) {
+                plot.newEmptyChunk(cp);
+            }
+        }
+
+        LevelAccelerator acc = new LevelAccelerator(level);
+        int blockCount = 0;
+
+        for (Map.Entry<BlockPos, StructureBlockInfo> entry : contraption.getBlocks().entrySet()) {
+            BlockPos localPos = entry.getKey();
+            BlockState state  = entry.getValue().state();
+
+            if (state.isAir()) continue;
+
+            BlockPos plotPos = plotAnchor.offset(localPos);
+
+            try {
+                LevelChunk chunk = acc.getChunk(
+                        SectionPos.blockToSectionCoord(plotPos.getX()),
+                        SectionPos.blockToSectionCoord(plotPos.getZ())
+                );
+
+                chunk.setBlockState(plotPos, state, true);
+
+                SubLevelAssemblyHelper.markAndNotifyBlock(
+                        level, plotPos, chunk,
+                        Blocks.AIR.defaultBlockState(), state,
+                        3,
+                        512
+                );
+
+                CompoundTag nbt = entry.getValue().nbt();
+                if (nbt != null) {
+                    BlockEntity be = level.getBlockEntity(plotPos);
+                    if (be != null) {
+                        CompoundTag tagWithPos = nbt.copy();
+                        tagWithPos.putInt("x", plotPos.getX());
+                        tagWithPos.putInt("y", plotPos.getY());
+                        tagWithPos.putInt("z", plotPos.getZ());
+                        be.loadWithComponents(tagWithPos, level.registryAccess());
+                    }
+                }
+
+                blockCount++;
+            } catch (Exception e) {
+                CreateSableTrains.LOGGER.error(
+                        "Failed to write block {} at local {} → plot {}", state, localPos, plotPos, e
+                );
+            }
+        }
+
+        CreateSableTrains.LOGGER.info(
+                "Populated plot with {} blocks from carriage contraption", blockCount
+        );
     }
 }
